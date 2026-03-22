@@ -1,0 +1,100 @@
+mappings:
+  # Airflow метрики - с правильным синтаксисом histogram_options
+  - match: "airflow.*"
+    name: "airflow_${1}"
+    labels:
+      service: "airflow"
+    histogram_options:
+      buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+    timer_type: histogram
+
+  # StatsD метрики
+  - match: "statsd.*"
+    name: "statsd_${1}"
+    labels:
+      service: "statsd"
+
+  # PostgreSQL метрики
+  - match: "postgres.*"
+    name: "postgres_${1}"
+    labels:
+      service: "postgres"
+
+  # Redis метрики
+  - match: "redis.*"
+    name: "redis_${1}"
+    labels:
+      service: "redis"
+
+  # Оптимизированные паттерны для timer/counter/gauge
+  # Вместо *.timer.* используем конкретные префиксы
+  - match: "airflow.*.timer.*"
+    name: "airflow_timer_${2}"
+    labels:
+      service: "airflow"
+      operation: "${1}"
+    timer_type: histogram
+    histogram_options:
+      buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+
+  - match: "postgres.*.timer.*"
+    name: "postgres_timer_${2}"
+    labels:
+      service: "postgres"
+      operation: "${1}"
+    timer_type: histogram
+    histogram_options:
+      buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+
+  - match: "redis.*.timer.*"
+    name: "redis_timer_${2}"
+    labels:
+      service: "redis"
+      operation: "${1}"
+    timer_type: histogram
+    histogram_options:
+      buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+
+  # Counter метрики с конкретными префиксами
+  - match: "airflow.*.counter.*"
+    name: "airflow_counter_${2}"
+    labels:
+      service: "airflow"
+      operation: "${1}"
+    match_metric_type: counter
+
+  - match: "postgres.*.counter.*"
+    name: "postgres_counter_${2}"
+    labels:
+      service: "postgres"
+      operation: "${1}"
+    match_metric_type: counter
+
+  - match: "redis.*.counter.*"
+    name: "redis_counter_${2}"
+    labels:
+      service: "redis"
+      operation: "${1}"
+    match_metric_type: counter
+
+  # Gauge метрики с конкретными префиксами
+  - match: "airflow.*.gauge.*"
+    name: "airflow_gauge_${2}"
+    labels:
+      service: "airflow"
+      operation: "${1}"
+    match_metric_type: gauge
+
+  - match: "postgres.*.gauge.*"
+    name: "postgres_gauge_${2}"
+    labels:
+      service: "postgres"
+      operation: "${1}"
+    match_metric_type: gauge
+
+  - match: "redis.*.gauge.*"
+    name: "redis_gauge_${2}"
+    labels:
+      service: "redis"
+      operation: "${1}"
+    match_metric_type: gauge

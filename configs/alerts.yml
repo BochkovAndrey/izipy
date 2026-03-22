@@ -1,0 +1,505 @@
+groups:
+  - name: system_health
+    rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          alertname: "InstanceDown"
+        annotations:
+          summary: "Instance {{ $labels.instance }} down"
+          description: "{{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://wiki.company.com/runbooks/instance-down"
+
+      - alert: HighCpuUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          alertname: "HighCpuUsage"
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 5 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/high-cpu"
+
+      - alert: CriticalCpuUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 5m
+        labels:
+          severity: critical
+          alertname: "CriticalCpuUsage"
+        annotations:
+          summary: "CRITICAL CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 95% for more than 5 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/critical-cpu"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          alertname: "HighMemoryUsage"
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 90% for more than 5 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/high-memory"
+
+      - alert: CriticalMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 97
+        for: 3m
+        labels:
+          severity: critical
+          alertname: "CriticalMemoryUsage"
+        annotations:
+          summary: "CRITICAL memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 97% for more than 3 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/critical-memory"
+
+      - alert: LowDiskSpace
+        expr: node_filesystem_avail_bytes / node_filesystem_size_bytes * 100 < 20
+        for: 10m
+        labels:
+          severity: warning
+          alertname: "LowDiskSpace"
+        annotations:
+          summary: "Low disk space on {{ $labels.mountpoint }}"
+          description: "Disk {{ $labels.mountpoint }} has less than 20% free space for more than 10 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/low-disk-space"
+
+      - alert: CriticalLowDiskSpace
+        expr: node_filesystem_avail_bytes / node_filesystem_size_bytes * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+          alertname: "CriticalLowDiskSpace"
+        annotations:
+          summary: "CRITICAL low disk space on {{ $labels.mountpoint }}"
+          description: "Disk {{ $labels.mountpoint }} has less than 10% free space for more than 5 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/critical-low-disk-space"
+
+      - alert: DiskFillRateHigh
+        expr: predict_linear(node_filesystem_avail_bytes[6h], 24*3600) < 0
+        for: 30m
+        labels:
+          severity: warning
+          alertname: "DiskFillRateHigh"
+        annotations:
+          summary: "Disk {{ $labels.mountpoint }} will be full within 24 hours"
+          description: "Based on fill rate, disk {{ $labels.mountpoint }} will be full in less than 24 hours"
+          runbook_url: "https://wiki.company.com/runbooks/disk-fill-rate"
+
+      - alert: HighLoadAverage
+        expr: node_load15 > (count by (instance) (node_cpu_seconds_total{mode="user"}) * 0.8)
+        for: 15m
+        labels:
+          severity: warning
+          alertname: "HighLoadAverage"
+        annotations:
+          summary: "High load average on {{ $labels.instance }}"
+          description: "Load average 15min is above 80% of CPU cores"
+          runbook_url: "https://wiki.company.com/runbooks/high-load"
+
+      - alert: SystemdServiceFailed
+        expr: node_systemd_unit_state{state="failed"} == 1
+        for: 1m
+        labels:
+          severity: warning
+          alertname: "SystemdServiceFailed"
+        annotations:
+          summary: "Systemd service {{ $labels.name }} failed"
+          description: "Service {{ $labels.name }} has failed on {{ $labels.instance }}"
+          runbook_url: "https://wiki.company.com/runbooks/systemd-failed"
+
+
+      - alert: HighNetworkTraffic
+        expr: rate(node_network_receive_bytes_total[5m]) > 100 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+          alertname: "HighNetworkTraffic"
+        annotations:
+          summary: "High network traffic on {{ $labels.instance }}"
+          description: "Network receive rate is above 100 MB/s on {{ $labels.device }}"
+          runbook_url: "https://wiki.company.com/runbooks/high-network"
+
+      - alert: TimeSkew
+        expr: abs(node_timex_offset_seconds) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          alertname: "TimeSkew"
+        annotations:
+          summary: "Time skew detected on {{ $labels.instance }}"
+          description: "System time is off by more than 0.5 seconds"
+          runbook_url: "https://wiki.company.com/runbooks/time-skew"
+
+      - alert: HighDiskLatency
+        expr: rate(node_disk_read_time_seconds_total[5m]) / rate(node_disk_reads_completed_total[5m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          alertname: "HighDiskLatency"
+        annotations:
+          summary: "High disk latency on {{ $labels.instance }}"
+          description: "Average disk read latency is above 100 ms"
+          runbook_url: "https://wiki.company.com/runbooks/high-disk-latency"
+
+  - name: database_health
+    rules:
+      - alert: PostgresDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          alertname: "PostgresDown"
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL instance is not responding"
+          runbook_url: "https://wiki.company.com/runbooks/postgres-down"
+
+      - alert: PostgresHighConnections
+        expr: pg_stat_database_numbackends > 100
+        for: 5m
+        labels:
+          severity: warning
+          alertname: "PostgresHighConnections"
+        annotations:
+          summary: "High PostgreSQL connections"
+          description: "Number of PostgreSQL connections is above 100"
+          runbook_url: "https://wiki.company.com/runbooks/postgres-high-connections"
+
+      - alert: PostgresCriticalConnections
+        expr: pg_stat_database_numbackends > 200
+        for: 5m
+        labels:
+          severity: critical
+          alertname: "PostgresCriticalConnections"
+        annotations:
+          summary: "CRITICAL PostgreSQL connections"
+          description: "Number of PostgreSQL connections is above 200"
+          runbook_url: "https://wiki.company.com/runbooks/postgres-critical-connections"
+
+      - alert: PostgresReplicationLag
+        expr: pg_replication_lag > 30
+        for: 2m
+        labels:
+          severity: warning
+          alertname: "PostgresReplicationLag"
+        annotations:
+          summary: "PostgreSQL replication lag"
+          description: "Replication lag is above 30 seconds for more than 2 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/postgres-replication-lag"
+
+      - alert: PostgresCriticalReplicationLag
+        expr: pg_replication_lag > 300
+        for: 2m
+        labels:
+          severity: critical
+          alertname: "PostgresCriticalReplicationLag"
+        annotations:
+          summary: "CRITICAL PostgreSQL replication lag"
+          description: "Replication lag is above 300 seconds for more than 2 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/postgres-critical-replication-lag"
+
+      - alert: PostgresDeadlocks
+        expr: increase(pg_stat_database_deadlocks[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          alertname: "PostgresDeadlocks"
+        annotations:
+          summary: "PostgreSQL deadlocks detected"
+          description: "Database deadlocks have been detected on {{ $labels.datname }}"
+          runbook_url: "https://wiki.company.com/runbooks/postgres-deadlocks"
+
+      - alert: PostgresSlowQueries
+        expr: rate(pg_stat_database_tup_fetched[5m]) > 0 and rate(pg_stat_database_tup_inserted[5m]) < 1
+        for: 30m
+        labels:
+          severity: info
+          alertname: "PostgresSlowQueries"
+        annotations:
+          summary: "PostgreSQL slow queries possible"
+          description: "High tuple fetch rate with low insert rate indicates possible slow queries"
+          runbook_url: "https://wiki.company.com/runbooks/postgres-slow-queries"
+
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          alertname: "RedisDown"
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance is not responding"
+          runbook_url: "https://wiki.company.com/runbooks/redis-down"
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_maxbytes * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          alertname: "RedisMemoryHigh"
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is above 85% for more than 10 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/redis-high-memory"
+
+      - alert: RedisCriticalMemory
+        expr: redis_memory_used_bytes / redis_memory_maxbytes * 100 > 95
+        for: 5m
+        labels:
+          severity: critical
+          alertname: "RedisCriticalMemory"
+        annotations:
+          summary: "CRITICAL Redis memory usage"
+          description: "Redis memory usage is above 95% for more than 5 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/redis-critical-memory"
+
+      - alert: RedisHighConnections
+        expr: redis_connected_clients > 1000
+        for: 5m
+        labels:
+          severity: warning
+          alertname: "RedisHighConnections"
+        annotations:
+          summary: "High Redis connections"
+          description: "Redis has more than 1000 connected clients"
+          runbook_url: "https://wiki.company.com/runbooks/redis-high-connections"
+
+      - alert: RedisRejectedConnections
+        expr: increase(redis_rejected_connections_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          alertname: "RedisRejectedConnections"
+        annotations:
+          summary: "Redis rejecting connections"
+          description: "Redis is rejecting connections due to maxclients limit"
+          runbook_url: "https://wiki.company.com/runbooks/redis-rejected-connections"
+
+      - alert: MySQLDown
+        expr: mysql_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          alertname: "MySQLDown"
+        annotations:
+          summary: "MySQL is down"
+          description: "MySQL instance is not responding"
+          runbook_url: "https://wiki.company.com/runbooks/mysql-down"
+
+
+      - alert: MySQLHighThreads
+        expr: mysql_global_status_threads_connected > 250
+        for: 5m
+        labels:
+          severity: warning
+          alertname: "MySQLHighThreads"
+        annotations:
+          summary: "High MySQL connections"
+          description: "MySQL has more than 250 connected threads"
+          runbook_url: "https://wiki.company.com/runbooks/mysql-high-threads"
+
+      - alert: MySQLSlowQueries
+        expr: increase(mysql_global_status_slow_queries[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          alertname: "MySQLSlowQueries"
+        annotations:
+          summary: "MySQL slow queries detected"
+          description: "More than 10 slow queries in the last 5 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/mysql-slow-queries"
+
+  - name: monitoring_services
+    rules:
+      - alert: PrometheusNotScraping
+        expr: prometheus_target_interval_seconds > 60
+        for: 5m
+        labels:
+          severity: warning
+          alertname: "PrometheusNotScraping"
+        annotations:
+          summary: "Prometheus not scraping targets"
+          description: "Prometheus is not scraping targets for more than 5 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/prometheus-not-scraping"
+
+      - alert: PrometheusHighMemory
+        expr: process_resident_memory_bytes{job="prometheus"} > 10 * 1024 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+          alertname: "PrometheusHighMemory"
+        annotations:
+          summary: "Prometheus high memory usage"
+          description: "Prometheus is using more than 10 GB of RAM"
+          runbook_url: "https://wiki.company.com/runbooks/prometheus-high-memory"
+
+      - alert: AlertmanagerDown
+        expr: up{job="alertmanager"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          alertname: "AlertmanagerDown"
+        annotations:
+          summary: "Alertmanager is down"
+          description: "Alertmanager instance is not responding"
+          runbook_url: "https://wiki.company.com/runbooks/alertmanager-down"
+
+      - alert: AlertmanagerHighNotificationsFailed
+        expr: rate(alertmanager_notifications_failed_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          alertname: "AlertmanagerHighNotificationsFailed"
+        annotations:
+          summary: "Alertmanager notification failures"
+          description: "Alertmanager has failed notifications in the last 5 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/alertmanager-notifications-failed"
+
+      - alert: ExporterDown
+        expr: up{job=~".*-exporter"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          alertname: "ExporterDown"
+        annotations:
+          summary: "Exporter {{ $labels.job }} is down"
+          description: "{{ $labels.job }} on {{ $labels.instance }} is not responding"
+          runbook_url: "https://wiki.company.com/runbooks/exporter-down"
+
+      - alert: PrometheusConfigReloadFailed
+        expr: prometheus_config_last_reload_successful == 0
+        for: 5m
+        labels:
+          severity: critical
+          alertname: "PrometheusConfigReloadFailed"
+        annotations:
+          summary: "Prometheus config reload failed"
+          description: "Prometheus configuration reload has failed"
+          runbook_url: "https://wiki.company.com/runbooks/prometheus-config-reload"
+
+      - alert: PrometheusTSDBErrors
+        expr: rate(prometheus_tsdb_compactions_failed_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          alertname: "PrometheusTSDBErrors"
+        annotations:
+          summary: "Prometheus TSDB errors"
+          description: "Prometheus is experiencing TSDB compaction errors"
+          runbook_url: "https://wiki.company.com/runbooks/prometheus-tsdb-errors"
+
+      - alert: PrometheusNotScraping
+        expr: prometheus_target_interval_seconds > 60
+        for: 5m
+        labels:
+          severity: warning
+          alertname: "PrometheusNotScraping"
+        annotations:
+          summary: "Prometheus not scraping targets"
+          description: "Prometheus is not scraping targets for more than 5 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/prometheus-not-scraping"
+
+      - alert: PrometheusHighMemory
+        expr: process_resident_memory_bytes{job="prometheus"} > 10 * 1024 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+          alertname: "PrometheusHighMemory"
+        annotations:
+          summary: "Prometheus high memory usage"
+          description: "Prometheus is using more than 10 GB of RAM"
+          runbook_url: "https://wiki.company.com/runbooks/prometheus-high-memory"
+
+      - alert: AlertmanagerDown
+        expr: up{job="alertmanager"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          alertname: "AlertmanagerDown"
+        annotations:
+          summary: "Alertmanager is down"
+          description: "Alertmanager instance is not responding"
+          runbook_url: "https://wiki.company.com/runbooks/alertmanager-down"
+
+      - alert: AlertmanagerHighNotificationsFailed
+        expr: rate(alertmanager_notifications_failed_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          alertname: "AlertmanagerHighNotificationsFailed"
+        annotations:
+          summary: "Alertmanager notification failures"
+          description: "Alertmanager has failed notifications in the last 5 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/alertmanager-notifications-failed"
+
+      - alert: ExporterDown
+        expr: up{job=~".*-exporter"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          alertname: "ExporterDown"
+        annotations:
+          summary: "Exporter {{ $labels.job }} is down"
+          description: "{{ $labels.job }} on {{ $labels.instance }} is not responding"
+          runbook_url: "https://wiki.company.com/runbooks/exporter-down"
+
+      - alert: PrometheusConfigReloadFailed
+        expr: prometheus_config_last_reload_successful == 0
+        for: 5m
+        labels:
+          severity: critical
+          alertname: "PrometheusConfigReloadFailed"
+        annotations:
+          summary: "Prometheus config reload failed"
+          description: "Prometheus configuration reload has failed"
+          runbook_url: "https://wiki.company.com/runbooks/prometheus-config-reload"
+
+      - alert: PrometheusTSDBErrors
+        expr: rate(prometheus_tsdb_compactions_failed_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          alertname: "PrometheusTSDBErrors"
+        annotations:
+          summary: "Prometheus TSDB errors"
+          description: "Prometheus is experiencing TSDB compaction errors"
+          runbook_url: "https://wiki.company.com/runbooks/prometheus-tsdb-errors"
+
+      - alert: PrometheusTooManySeries
+        expr: prometheus_tsdb_head_series > 1000000
+        for: 30m
+        labels:
+          severity: warning
+          alertname: "PrometheusTooManySeries"
+        annotations:
+          summary: "Prometheus has too many active series"
+          description: "Number of active time series in Prometheus exceeds 1 million"
+          runbook_url: "https://wiki.company.com/runbooks/prometheus-too-many-series"
+
+      - alert: PrometheusDiskSpaceLow
+        expr: node_filesystem_avail_bytes{mountpoint="/prometheus/data"} / node_filesystem_size_bytes * 100 < 20
+        for: 30m
+        labels:
+          severity: warning
+          alertname: "PrometheusDiskSpaceLow"
+        annotations:
+          summary: "Low disk space on Prometheus data volume"
+          description: "Disk space for Prometheus storage is below 20% for more than 30 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/prometheus-disk-space-low"
+
+      - alert: PrometheusRuleEvaluationSlow
+        expr: prometheus_rule_group_last_duration_seconds > 30
+        for: 15m
+        labels:
+          severity: warning
+          alertname: "PrometheusRuleEvaluationSlow"
+        annotations:
+          summary: "Slow Prometheus rule evaluation"
+          description: "One or more rule groups take more than 30 seconds to evaluate"
+          runbook_url: "https://wiki.company.com/runbooks/prometheus-rule-slow"
+
+
