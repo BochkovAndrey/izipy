@@ -1,0 +1,20 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 1h
+  receiver: 'webhook-notifications'
+
+
+receivers:
+  - name: 'webhook-notifications'
+    webhook_configs:
+      - url: 'https://api.pachca.com/webhooks/01KKPXHP4NM8Q1VSPVDN2B4BZ4'
+        send_resolved: true
+        http_config:
+          bearer_token: 'YRl382QCN8dhhEyfxRNTCVTe4EvtxxpnrQc64_Fq1Zc'
+
+inhibit_rules: []
